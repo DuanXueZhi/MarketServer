@@ -3,6 +3,7 @@ var mongoose = require('mongoose');
 var GoodsSchema = new mongoose.Schema({
     productId: {type: String, required: true}, // 商品货号
     productName: {type: String, required: true}, // 商品名
+    productNameAddId: {type: String, required: true}, // 商品名+id
     productNameFirstSpell: {type: String,default: '品名首拼'}, // 品名首拼
     productNameFullSpell: {type: String,default: '品名全拼'}, // 品名全拼
     productSeller: {type: String,default: '厂商'}, // 厂商
@@ -31,7 +32,7 @@ var GoodsSchema = new mongoose.Schema({
 
 //.pre表示每次存储数据之前先调用这个方法
 GoodsSchema.pre('save', function (next) {
-    var nowTime = new Date(); // 获取当前时间
+    var nowTime = new Date(); // 获取时间（格林尼治时间）
     // console.log(nowTime, new Date(nowTime).getTime());
     var ChinaTime = new Date(nowTime).getTime() - nowTime.getTimezoneOffset() * 60 * 1000; // 将当前时间转换为时间戳并减去当前地区时差
     // console.log('中国时间', ChinaTime);
@@ -55,6 +56,7 @@ GoodsSchema.statics = {
             .create({
                 productId: data.productId, //商品货号
                 productName: data.productName, //商品名
+                productNameAddId: data.productNameAddId, // 商品名+id
                 productNameFirstSpell: data.productNameFirstSpell, //品名首拼
                 productNameFullSpell: data.productNameFullSpell, //品名全拼
                 productSeller: data.productSeller, //厂商
@@ -74,6 +76,13 @@ GoodsSchema.statics = {
     /*
     * 删
     * */
+    // 彻底删除某一商品
+    removeProduct: function (data, callbackFn) {
+        console.log('模式内置静态方法---通过_id删除单个商品');
+        return data
+            .remove(callbackFn)
+    },
+
     /*
     * 改
     * */
@@ -81,38 +90,41 @@ GoodsSchema.statics = {
     * 查
     * */
     // 标签查询
-    findTitleProductColor: function (cb) { // 颜色
+    // 颜色
+    findTitleProductColor: function (cb) {
         return this
             .find({}, {_id: 0, productColor: 1})
             .exec(cb)
     },
-    findTitleProductSpecifications: function (cb) { // 规格
-        return this
-            .find({}, {_id: 0, productSpecifications: 1})
-            .exec(cb)
-    },
-    findTitleProductGenre: function (cb) { // 分类
+
+    // 分类
+    findTitleProductGenre: function (cb) {
         return this
             .find({}, {_id: 0, productGenre: 1})
             .exec(cb)
     },
+
     // 表查询
-    findAll: function (cb) { // 查到所有（admin）
+    // 查到所有（admin）
+    findAll: function (cb) {
         return this
             .find({})
-            .sort('meta.updateAt')
+            .sort({'meta.updateAt': -1})
             .exec(cb)
     },
-    findExistAll: function (cb) { // 查到所有存在（exist = true）的（boss）
+
+    // 查到所有存在（exist = true）的（boss）
+    findExistAll: function (cb) {
         return this
             .find({exist: true})
-            .sort('meta.updateAt')
+            .sort({'meta.updateAt': -1})
             .exec(cb)
     },
-    findByPrerequisite: function (prerequisite, value, cb) { // 按条件查
-        var key = prerequisite;
+
+    // 按条件查：_id
+    findOneBy_id: function (data, cb) {
         return this
-            .findOne({key: value})
+            .findOne({_id: data})
             .exec(cb)
     }
 };

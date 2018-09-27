@@ -45,21 +45,53 @@ router.post('/add_goods', function (req, res) {
         }
     });
 });
+
 // （删）
+// 彻底删除goods列表中的某一数据（admin）
+router.delete('/delete_goods', function (req, res) {
+    console.log('彻底删除goods列表中的某一数据（admin）');
+    // 进行角色校验
+    console.log('角色：', req.query.userId);
+    // 先查询到再删除（虽然这没用：数据库中不存在的就不会显示，但是为了以后维护现在还是按规矩办事吧）
+    Goods.findOneBy_id(req.query.productId, function (err, data) {
+        if (err) {
+            // console.log('查询出错', err);
+            return res.json({code: 1, msg: '查询' + req.query.productId + '出错'})
+        } else if (data === null) {
+            return res.json({code: 1, msg: '查询' + req.query.productId + '为空'})
+        } else {
+            // console.log('查询' + req.query.productId + '成功', data);
+            Goods.removeProduct(data, function (err1, doc) {
+                if (err1) {
+                    console.log('删除出错', err1);
+                    return res.json({code: 1, msg: '删除商品出错'})
+                } else {
+                    console.log('删除' + req.query.productId + '成功', doc);
+                    return res.json({code: 0, msg: '删除商品成功', data: doc})
+                }
+            })
+        }
+    })
+
+
+})
+
 // （改）
+
 // （查）
 // 标签查询
 router.get('/find_title', function (req, res) {
     console.log('添加商品时颜色、规格、分类字段在数据库中已存在的值的获取');
+    console.log(req.query.userId);
     let colorData = []; // 颜色
     let genreData = []; // 分类
     const findColor = function () {
         Goods.findTitleProductColor(function (err, data) { // 颜色字段
-            if (err) {
+            if (err || data === null) {
                 console.log('查询颜色出错');
                 return res.json({code: 1, msg: '查询颜色出错'})
             } else {
-                console.log('查询到数据库中所有颜色字段的值', data);
+                // console.log('查询到数据库中所有颜色字段的值', data, typeof data);
                 data.forEach(e => {
                     if (colorData.indexOf(e.productColor) === -1) {
                         // console.log('正常写入');
@@ -72,11 +104,11 @@ router.get('/find_title', function (req, res) {
     };
     const findGenre = function () {
         Goods.findTitleProductGenre(function (err, data) { // 分类字段
-            if (err) {
+            if (err || data === null) {
                 console.log('查询分类出错');
                 return res.json({code: 1, msg: '查询分类出错'})
             } else {
-                console.log('查询到数据库中所有分类字段的值');
+                // console.log('查询到数据库中所有分类字段的值', data);
                 data.forEach(e => {
                     if (genreData.indexOf(e.productGenre) === -1) {
                         // console.log('正常写入');
@@ -89,12 +121,15 @@ router.get('/find_title', function (req, res) {
     };
     findColor();
 });
-// 查询数据库中所有商品及全部商品信息（权限最高，仅boss及以上admin身份可用）  需要前端传来user_id，与后台保存登录的_id相比较（总之怎么安全怎么弄）。
+
+// 表查询
+// 查询数据库中所有商品及全部商品信息（权限最高，仅admin身份可用）  需要前端传来user_id，与后台保存登录的_id相比较（总之怎么安全怎么弄）。
 router.get('/admin_goods', function (req, res) {
    console.log('admin获取所有商品全部信息');
    // 此处应进行用户比对（确保安全）
+   console.log(req.query.userId);
    Goods.findAll(function (err, data) {
-       if (err) {
+       if (err || data === null) {
            console.log('查询出错');
            return res.json({code: 1, msg: '查询出错'})
        } else {
@@ -103,13 +138,16 @@ router.get('/admin_goods', function (req, res) {
        }
    })
 });
-// 查询所有未删除的商品（exist = true）
+
+// 查询所有未删除的商品（exist = true）（boss可用）
 router.get('/complete_goods', function (req, res) {
     console.log('boss获取所有商品全部信息');
     // 此处应进行用户比对（确保安全）
+    console.log(req.query.userId);
     Goods.findExistAll(function (err, data) {
-        if (err) {
+        if (err || data === null) {
             console.log('查询出错');
+            console.log(err);
             return res.json({code: 1, msg: '查询出错'})
         } else {
             console.log('查询到所有商品');
