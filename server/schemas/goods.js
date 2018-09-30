@@ -28,7 +28,9 @@ var GoodsSchema = new mongoose.Schema({
             default: Date.now()
         }
     }
-});
+}
+    // {timestamps: true} // 在schema中设置timestamps为true，schema映射的文档document会自动添加createdAt和updatedAt这两个字段，代表创建时间和更新时间
+);
 
 //.pre表示每次存储数据之前先调用这个方法
 GoodsSchema.pre('save', function (next) {
@@ -86,6 +88,7 @@ GoodsSchema.statics = {
     /*
     * 改
     * */
+    //
     /*
     * 查
     * */
@@ -123,8 +126,9 @@ GoodsSchema.statics = {
 
     // 按条件查：_id
     findOneBy_id: function (data, cb) {
+        console.log(data);
         return this
-            .findOne({_id: data})
+            .findById(data) // 如果在查询语句中要使用_id，则需要使用findById语句，而不能使用find或findOne语句
             .exec(cb)
     }
 };

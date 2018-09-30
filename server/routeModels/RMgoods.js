@@ -4,7 +4,7 @@
 var express = require('express');
 var router = express.Router(); // 创建模块化、可挂载的路由句柄
 
-// 导入公用文件
+// 导入公用函数文件
 var jsfn = require('../common/jsfn');
 
 /*
@@ -53,12 +53,12 @@ router.delete('/delete_goods', function (req, res) {
     // 进行角色校验
     console.log('角色：', req.query.userId);
     // 先查询到再删除（虽然这没用：数据库中不存在的就不会显示，但是为了以后维护现在还是按规矩办事吧）
-    Goods.findOneBy_id(req.query.productId, function (err, data) {
+    Goods.findOneBy_id(req.query.product_id, function (err, data) {
         if (err) {
             // console.log('查询出错', err);
-            return res.json({code: 1, msg: '查询' + req.query.productId + '出错'})
+            return res.json({code: 1, msg: '查询' + req.query.product_id + '出错'})
         } else if (data === null) {
-            return res.json({code: 1, msg: '查询' + req.query.productId + '为空'})
+            return res.json({code: 1, msg: '查询' + req.query.product_id + '为空'})
         } else {
             // console.log('查询' + req.query.productId + '成功', data);
             Goods.removeProduct(data, function (err1, doc) {
@@ -66,7 +66,7 @@ router.delete('/delete_goods', function (req, res) {
                     console.log('删除出错', err1);
                     return res.json({code: 1, msg: '删除商品出错'})
                 } else {
-                    console.log('删除' + req.query.productId + '成功', doc);
+                    console.log('删除' + req.query.product_id + '成功', doc);
                     return res.json({code: 0, msg: '删除商品成功', data: doc})
                 }
             })
