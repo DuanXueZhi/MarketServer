@@ -15,8 +15,8 @@ var Goods = require('./models/goods'); // （商品）
 var app = express();
 
 app.use(cookieParser()); // 加载用于解析cookie的中间件
-app.use(bodyParser.urlencoded({ extended: false })); // 创建 application/x-www-form-urlencoded 解析
-app.use(bodyParser.json()); // 创建 application/json 解析
+app.use(bodyParser.urlencoded({ extended: false})); // 创建 application/x-www-form-urlencoded 解析，返回的对象是一个键值对，当extended为false的时候，键值对中的值就为'String'或'Array'形式，为true的时候，则可为任何数据类型。
+app.use(bodyParser.json({'limit': '10240kb'})); // 创建 application/json 解析 'limit': '10240kb'，设置参数大小小于20MB
 app.use('/public', express.static('public')); // 设置文件直接访问到图片，静态资源获取
 // app.use(express.static('public')); // 上等于（要去掉public访问）
 
@@ -34,7 +34,7 @@ app.all('*', function (req, res, next) {
     res.header("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,OPTIONS");
     res.header("Access-Control-Allow-Credentials", true);
     res.header("X-Powered-By", ' 3.2.1');
-    if (req.method == "OPTIONS") res.send(200);/*让options请求快速返回*/
+    if (req.method == "OPTIONS") res.sendStatus(200);/*让options请求快速返回*/
     else
         next();
 });
