@@ -139,7 +139,7 @@ router.get('/admin_goods', function (req, res) {
    })
 });
 
-// 查询所有未删除的商品（exist = true）（boss可用）
+// 查询所有未删除的商品全部信息（exist = true）（boss可用）
 router.get('/complete_goods', function (req, res) {
     console.log('boss获取所有商品全部信息');
     // 此处应进行用户比对（确保安全）
@@ -154,6 +154,27 @@ router.get('/complete_goods', function (req, res) {
             return res.json({code: 0, msg: '查询成功', data: data})
         }
     })
+});
+
+// 通过_id查询商品的所有信息（皆可用，根据身份返回不同的值）
+router.post('/goods_by_searchData', function (req, res) {
+    console.log('通过searchData获取单个商品全部信息');
+    // 此处应进行用户比对（确保安全）
+    console.log(req.body);
+    var searchData = req.body.data.searchData;
+    console.log(req.body.data.searchData);
+    if (searchData._id !== '') {
+        Goods.findOneBy_id(searchData._id, function (err, data) {
+            if (err) {
+                console.log('查询出错');
+                console.log(err);
+                return res.json({code: 1, msg: '查询出错'})
+            } else {
+                console.log('查询到商品');
+                return res.json({code: 0, msg: '查询成功', data: data})
+            }
+        })
+    }
 });
 
 
