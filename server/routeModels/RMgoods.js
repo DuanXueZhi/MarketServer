@@ -31,7 +31,7 @@ router.post('/add_goods', function (req, res) {
     console.log('添加商品');
     var productPicture = [];
     req.body.data.productImage.forEach(e => {
-        productPicture.push(jsfn.saveImage(e, 'public/image/').replace('public/', 'http://localhost:3000/public/')); // 接收图片转码并存储（写在RMuploadImage.js文件中公用）
+        productPicture.push(jsfn.saveImage(e, 'public/image/goodsPicture/').replace('public/', 'http://localhost:3000/public/')); // 接收图片转码并存储（写在RMuploadImage.js文件中公用），并添加请求端口
     });
     req.body.data.productPicture = productPicture; // 将转换完图片存储的地址写入body.data中
     req.body.data.productImage = []; // 清空一下原来的base64串，减少数据大小
@@ -72,11 +72,56 @@ router.delete('/delete_goods', function (req, res) {
             })
         }
     })
+});
 
-
-})
+// 假删除：在（改）update_goods_shamDelete
 
 // （改）
+// 修改商品
+router.post('/update_goods', function (req, res) {
+    console.log('接收修改的商品');
+    var updateData = req.body.data.updateData
+    var _id = req.body.data._id
+    if (updateData.productImage) {
+        console.log('图片改变');
+        var productPicture = [];
+        updateData.productImage.forEach(e => {
+            if (e.substring(0, 4) === 'data') {
+                productPicture.push(jsfn.saveImage(e, 'public/image/goodsPicture/').replace('public/', 'http://localhost:3000/public/')); // 接收图片转码并存储（写在RMuploadImage.js文件中公用）
+            }else if (e.substring(0, 4) === 'http') {
+                productPicture.push(e)
+            }
+        });
+        updateData.productImage = []; // 清空一下原来的base64
+        updateData.productImage = productPicture; // 将转换完图片存储的地址写入body.data中
+    }
+    console.log('update_goods', updateData)
+    Goods.updateGoods(_id, updateData, function (err) { // 调用模式中静态方法，存储数据 参数1：存储数据， 参数2：回调函数
+        if (err) {
+            console.log('修改商品-商品存储错误', err);
+            return res.json({code: 1, msg: '商品修改并存储错误'});
+        } else {
+            // console.log('修改商品-商品存储成功');
+            return res.json({code: 0, msg: '商品修改并存储成功', image: productPicture}); // 返回图片地址（图片预览使用）
+        }
+    });
+});
+
+// 假删除（将exist置为false）也就是修改信息了
+router.post('/update_goods_shamDelete', function (req, res) {
+    console.log('update_goods_shamDelete', req.body.data.userId)
+    var _id = req.body.data._id
+    Goods.updateGoods(_id, {exist: false}, function (err) {
+        if (err) {
+            console.log('修改商品exist: false-商品存储错误', err);
+            return res.json({code: 1, msg: '商品修改exist: false（假删除）并存储错误'});
+        } else {
+            // console.log('修改商品-商品存储成功');
+            return res.json({code: 0, msg: '商品修改（假删除）并存储成功'}); // 返回图片地址（图片预览使用）
+        }
+    })
+});
+
 
 // （查）
 // 标签查询
@@ -105,10 +150,10 @@ router.get('/find_title', function (req, res) {
     const findGenre = function () {
         Goods.findTitleProductGenre(function (err, data) { // 分类字段
             if (err || data === null) {
-                console.log('查询分类出错');
+                console.log('查询分类出错', err);
                 return res.json({code: 1, msg: '查询分类出错'})
             } else {
-                // console.log('查询到数据库中所有分类字段的值', data);
+                console.log('查询到数据库中所有分类字段的值', data);
                 data.forEach(e => {
                     if (genreData.indexOf(e.productGenre) === -1) {
                         // console.log('正常写入');
@@ -120,6 +165,49 @@ router.get('/find_title', function (req, res) {
         });
     };
     findColor();
+});
+
+// 商品列表展示中表头筛选中选项菜单查询
+router.post('/find_searchItem', function (req, res) {
+    console.log('find_searchItem', req.body.data);
+    var searchItem = req.body.data.searchItem;
+    var searchData = req.body.data.searchData;
+    for (var obj in searchData) { // 剔除空值
+        if (searchData[obj] === '') {
+            delete searchData[obj]
+        }
+    }
+    if (searchData.inputCondition) { // 将搜索框输入的东西转换为（商品id、商品名、商品id+名、商品名首拼、商品名全拼）字段，并加入模糊查询
+        searchData.$or = [
+            {productId: {$regex: searchData.inputCondition}},
+            {productName: {$regex: searchData.inputCondition}},
+            {productNameFirstSpell: {$regex: searchData.inputCondition}},
+            {productNameFullSpell: {$regex: searchData.inputCondition}},
+            {productNameAddId: {$regex: searchData.inputCondition}},
+            {productGenre: {$regex: searchData.inputCondition}}
+        ]
+        delete searchData.inputCondition
+    }
+    var searchAddItem =
+        [
+            {$match: searchData},
+            {$group: {_id: '$' + searchItem, count: {$sum: 1}}}
+        ]
+    /*              productSeller: '$productSeller',
+                    productColor: '$productColor',
+                    productGenre: '$productGenre',
+                    userId: '$userId'
+    */
+    Goods.findAllSearchItem (searchAddItem, function (err, data) {
+        if (err) {
+            console.log('查询出错');
+            console.log(err);
+            return res.json({code: 1, msg: '查询出错'})
+        } else {
+            console.log('查询到所有条件的选项', data);
+            return res.json({code: 0, msg: '查询成功', data: data})
+        }
+    })
 });
 
 // 表查询
@@ -156,21 +244,51 @@ router.get('/complete_goods', function (req, res) {
     })
 });
 
-// 通过_id查询商品的所有信息（皆可用，根据身份返回不同的值）
+// 通过筛选条件searchData（包括_id）查询商品的所有信息（皆可用，根据身份返回不同的值）[包括按_id查询]
 router.post('/goods_by_searchData', function (req, res) {
     console.log('通过searchData获取单个商品全部信息');
     // 此处应进行用户比对（确保安全）
-    console.log(req.body);
+    console.log(req.body, req.body.data.userId); /* -----------------------安全有待开发----------------------- */
     var searchData = req.body.data.searchData;
-    console.log(req.body.data.searchData);
-    if (searchData._id !== '') {
-        Goods.findOneBy_id(searchData._id, function (err, data) {
+    for (var obj in searchData) { // 剔除空值
+        if (searchData[obj] === '') {
+            delete searchData[obj]
+        }
+    }
+    if (searchData.inputCondition) { // 将搜索框输入的东西转换为（商品id、商品名、名首拼、名全拼、商品id+名）字段，并加入模糊查询 [分类、操作者就不需要输入搜索了，点击表头筛选即可，否则输入搜索的结果会有很多无关的]
+        console.log('商品搜索输入不为空')
+        if (searchData.productName) { // 判断是否使用了‘表头筛选’中的‘商品名’功能，【有：1.商品名/首拼/全拼——按照表头筛选为准。2.商品id/商品名+id——对productNameAddId模糊查询会查到id。3.】
+            searchData.$or = [
+                {productNameAddId: {$regex: searchData.inputCondition}}
+            ]
+        }
+        searchData.$or = [
+            {productNameFirstSpell: {$regex: searchData.inputCondition}},
+            {productNameFullSpell: {$regex: searchData.inputCondition}},
+            {productNameAddId: {$regex: searchData.inputCondition}}
+            ]
+        delete searchData.inputCondition
+    }
+    if (searchData._id) { // 按照商品_id查询
+        Goods.findOneBy_id(searchData._id, function (err, data) { // 仅传_id
+            console.log('按照商品_id查询');
             if (err) {
                 console.log('查询出错');
                 console.log(err);
                 return res.json({code: 1, msg: '查询出错'})
             } else {
                 console.log('查询到商品');
+                return res.json({code: 0, msg: '查询成功', data: data})
+            }
+        })
+    } else { // 多条件筛选
+        Goods.findBySearchData(searchData, function (err, data) {
+            if (err) {
+                console.log('查询出错');
+                console.log(err);
+                return res.json({code: 1, msg: '查询出错'})
+            } else {
+                console.log('查询到商品s');
                 return res.json({code: 0, msg: '查询成功', data: data})
             }
         })
