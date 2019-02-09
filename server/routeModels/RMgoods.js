@@ -17,7 +17,7 @@ var Goods = require('../models/goods'); // （商品）
 * */
 // 通用
 router.use(function timeLog(req, res, next) {
-    console.log('/-------------------------RMgoods(对商品操作商品模块)---------------------------/', Date.now());
+    console.log('/-------------------------RMgoods(对商品操作模块)---------------------------/', Date.now());
     next();
 });
 
@@ -25,17 +25,23 @@ router.use(function timeLog(req, res, next) {
 * 路由
 * */
 
+const nginxIntercept = '.DXZ' // 设置nginx拦截参数
+const commonIP = '60.205.179.224' // 公网IP
+
 // （增）
 // 添加商品
-router.post('/add_goods', function (req, res) {
+router.post('/add_goods' + nginxIntercept, function (req, res) {
     console.log('添加商品');
+    var productData = req.body.data.productData
+    var userId = req.body.data.userId
+    console.log(productData, userId)
     var productPicture = [];
-    req.body.data.productImage.forEach(e => {
-        productPicture.push(jsfn.saveImage(e, 'public/image/goodsPicture/').replace('public/', 'http://localhost:3000/public/')); // 接收图片转码并存储（写在RMuploadImage.js文件中公用），并添加请求端口
+    productData.productImage.forEach(e => {
+        productPicture.push(jsfn.saveImage(e, 'public/image/goodsPicture/').replace('public/', 'http://' + commonIP + '/public/')); // 接收图片转码并存储（写在RMuploadImage.js文件中公用），并添加请求端口
     });
-    req.body.data.productPicture = productPicture; // 将转换完图片存储的地址写入body.data中
-    req.body.data.productImage = []; // 清空一下原来的base64串，减少数据大小
-    Goods.addGoods(req.body.data, function (err) { // 调用模式中静态方法，存储数据 参数1：存储数据， 参数2：回调函数
+    productData.productPicture = productPicture; // 将转换完图片存储的地址写入body.data中
+    productData.productImage = []; // 清空一下原来的base64串，减少数据大小
+    Goods.addGoods(productData, function (err) { // 调用模式中静态方法，存储数据 参数1：存储数据， 参数2：回调函数
         if (err) {
             console.log('添加商品-商品存储错误', err);
             return res.json({code: 1, msg: '商品存储错误'})
@@ -48,7 +54,7 @@ router.post('/add_goods', function (req, res) {
 
 // （删）
 // 彻底删除goods列表中的某一数据（admin）
-router.delete('/delete_goods', function (req, res) {
+router.delete('/delete_goods' + nginxIntercept, function (req, res) {
     console.log('彻底删除goods列表中的某一数据（admin）');
     // 进行角色校验
     console.log('角色：', req.query.userId);
@@ -78,8 +84,9 @@ router.delete('/delete_goods', function (req, res) {
 
 // （改）
 // 修改商品
-router.post('/update_goods', function (req, res) {
+router.post('/update_goods' + nginxIntercept, function (req, res) {
     console.log('接收修改的商品');
+    var userId = req.body.data.userId // 用户Id
     var updateData = req.body.data.updateData
     var _id = req.body.data._id
     if (updateData.productImage) {
@@ -87,7 +94,7 @@ router.post('/update_goods', function (req, res) {
         var productPicture = [];
         updateData.productImage.forEach(e => {
             if (e.substring(0, 4) === 'data') {
-                productPicture.push(jsfn.saveImage(e, 'public/image/goodsPicture/').replace('public/', 'http://localhost:3000/public/')); // 接收图片转码并存储（写在RMuploadImage.js文件中公用）
+                productPicture.push(jsfn.saveImage(e, 'public/image/goodsPicture/').replace('public/', 'http://' + commonIP + '/public/')); // 接收图片转码并存储（写在RMuploadImage.js文件中公用）
             }else if (e.substring(0, 4) === 'http') {
                 productPicture.push(e)
             }
@@ -108,7 +115,7 @@ router.post('/update_goods', function (req, res) {
 });
 
 // 假删除（将exist置为false）也就是修改信息了
-router.post('/update_goods_shamDelete', function (req, res) {
+router.post('/update_goods_shamDelete' + nginxIntercept, function (req, res) {
     console.log('update_goods_shamDelete', req.body.data.userId)
     var _id = req.body.data._id
     Goods.updateGoods(_id, {exist: false}, function (err) {
@@ -125,7 +132,7 @@ router.post('/update_goods_shamDelete', function (req, res) {
 
 // （查）
 // 标签查询
-router.get('/find_title', function (req, res) {
+router.get('/find_title' + nginxIntercept, function (req, res) {
     console.log('添加商品时颜色、规格、分类字段在数据库中已存在的值的获取');
     console.log(req.query.userId);
     let colorData = []; // 颜色
@@ -168,10 +175,10 @@ router.get('/find_title', function (req, res) {
 });
 
 // 商品列表展示中表头筛选中选项菜单查询
-router.post('/find_searchItem', function (req, res) {
+router.post('/find_searchItem' + nginxIntercept, function (req, res) {
     console.log('find_searchItem', req.body.data);
-    var searchItem = req.body.data.searchItem;
-    var searchData = req.body.data.searchData;
+    var searchItem = req.body.data.searchItem; // 筛选项
+    var searchData = req.body.data.searchData; // 此时的筛选条件
     for (var obj in searchData) { // 剔除空值
         if (searchData[obj] === '') {
             delete searchData[obj]
@@ -188,16 +195,11 @@ router.post('/find_searchItem', function (req, res) {
         ]
         delete searchData.inputCondition
     }
-    var searchAddItem =
+    var searchAddItem = // 设置find()语句在searchData条件下以searchItem项为分组，得到searchItem在库中有那些不同值
         [
             {$match: searchData},
             {$group: {_id: '$' + searchItem, count: {$sum: 1}}}
         ]
-    /*              productSeller: '$productSeller',
-                    productColor: '$productColor',
-                    productGenre: '$productGenre',
-                    userId: '$userId'
-    */
     Goods.findAllSearchItem (searchAddItem, function (err, data) {
         if (err) {
             console.log('查询出错');
@@ -212,7 +214,7 @@ router.post('/find_searchItem', function (req, res) {
 
 // 表查询
 // 查询数据库中所有商品及全部商品信息（权限最高，仅admin身份可用）  需要前端传来user_id，与后台保存登录的_id相比较（总之怎么安全怎么弄）。
-router.get('/admin_goods', function (req, res) {
+router.get('/admin_goods' + nginxIntercept, function (req, res) {
    console.log('admin获取所有商品全部信息');
    // 此处应进行用户比对（确保安全）
    console.log(req.query.userId);
@@ -228,7 +230,7 @@ router.get('/admin_goods', function (req, res) {
 });
 
 // 查询所有未删除的商品全部信息（exist = true）（boss可用）
-router.get('/complete_goods', function (req, res) {
+router.get('/complete_goods' + nginxIntercept, function (req, res) {
     console.log('boss获取所有商品全部信息');
     // 此处应进行用户比对（确保安全）
     console.log(req.query.userId);
@@ -245,7 +247,7 @@ router.get('/complete_goods', function (req, res) {
 });
 
 // 通过筛选条件searchData（包括_id）查询商品的所有信息（皆可用，根据身份返回不同的值）[包括按_id查询]
-router.post('/goods_by_searchData', function (req, res) {
+router.post('/goods_by_searchData' + nginxIntercept, function (req, res) {
     console.log('通过searchData获取单个商品全部信息');
     // 此处应进行用户比对（确保安全）
     console.log(req.body, req.body.data.userId); /* -----------------------安全有待开发----------------------- */
@@ -258,15 +260,14 @@ router.post('/goods_by_searchData', function (req, res) {
     if (searchData.inputCondition) { // 将搜索框输入的东西转换为（商品id、商品名、名首拼、名全拼、商品id+名）字段，并加入模糊查询 [分类、操作者就不需要输入搜索了，点击表头筛选即可，否则输入搜索的结果会有很多无关的]
         console.log('商品搜索输入不为空')
         if (searchData.productName) { // 判断是否使用了‘表头筛选’中的‘商品名’功能，【有：1.商品名/首拼/全拼——按照表头筛选为准。2.商品id/商品名+id——对productNameAddId模糊查询会查到id。3.】
+            searchData.productNameAddId = {$regex: searchData.inputCondition}
+        } else {
             searchData.$or = [
+                {productNameFirstSpell: {$regex: searchData.inputCondition}},
+                {productNameFullSpell: {$regex: searchData.inputCondition}},
                 {productNameAddId: {$regex: searchData.inputCondition}}
             ]
         }
-        searchData.$or = [
-            {productNameFirstSpell: {$regex: searchData.inputCondition}},
-            {productNameFullSpell: {$regex: searchData.inputCondition}},
-            {productNameAddId: {$regex: searchData.inputCondition}}
-            ]
         delete searchData.inputCondition
     }
     if (searchData._id) { // 按照商品_id查询
@@ -294,8 +295,6 @@ router.post('/goods_by_searchData', function (req, res) {
         })
     }
 });
-
-
 
 
 module.exports = router;
