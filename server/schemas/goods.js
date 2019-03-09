@@ -16,7 +16,7 @@ var GoodsSchema = new mongoose.Schema({
     productOriginalPrice: {type: Number, default: 0}, // 商品进价
     productBatchPrice: {type: Number, default: 0}, // 商品批量售价
     productSoloPrice: {type: Number, default: 0}, // 商品零售价
-    userId: {type: String, default: ''}, // 商品操作者
+    operateUser: {type: String, default: ''}, // 商品操作者
     productExplain: {type: String, default: ''}, // 商品备注
     exist: {type: Boolean, default: true}, // 是否存在（删除时使用）
     meta: {
@@ -74,7 +74,7 @@ GoodsSchema.statics = {
                 productOriginalPrice: data.productOriginalPrice, //商品进价
                 productBatchPrice: data.productBatchPrice, //商品批量售价
                 productSoloPrice: data.productSoloPrice, //商品零售价
-                userId: data.userId, //商品操作者
+                operateUser: data.operateUser, //商品操作者
                 productExplain: data.productExplain, //商品备注
                 exist: data.exist //是否存在（删除时使用）
             }, callbackFn)

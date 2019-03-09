@@ -26,15 +26,16 @@ router.use(function timeLog(req, res, next) {
 * */
 
 const nginxIntercept = '.DXZ' // 设置nginx拦截参数
-const commonIP = '60.205.179.224' // 公网IP
+// const commonIP = '60.205.179.224' // 公网IP
+const commonIP = 'localhost:3000' // 本地地址
 
 // （增）
 // 添加商品
 router.post('/add_goods' + nginxIntercept, function (req, res) {
     console.log('添加商品');
     var productData = req.body.data.productData
-    var userId = req.body.data.userId
-    console.log(productData, userId)
+    var operateUser = req.body.data.operateUser
+    console.log(productData, operateUser)
     var productPicture = [];
     productData.productImage.forEach(e => {
         productPicture.push(jsfn.saveImage(e, 'public/image/goodsPicture/').replace('public/', 'http://' + commonIP + '/public/')); // 接收图片转码并存储（写在RMuploadImage.js文件中公用），并添加请求端口
@@ -86,9 +87,10 @@ router.delete('/delete_goods' + nginxIntercept, function (req, res) {
 // 修改商品
 router.post('/update_goods' + nginxIntercept, function (req, res) {
     console.log('接收修改的商品');
-    var userId = req.body.data.userId // 用户Id
+    var operateUser = req.body.data.operateUser // 操作用户
     var updateData = req.body.data.updateData
     var _id = req.body.data._id
+    updateData.operateUser = operateUser.userName
     if (updateData.productImage) {
         console.log('图片改变');
         var productPicture = [];

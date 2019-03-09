@@ -35,7 +35,7 @@ router.post('/add_user' + nginxIntercept, function (req, res) {
     console.log('添加添用户');
     var userData = req.body.data.user
     var operateUser = req.body.data.operateUser // 操作者id-------------------------------------------安全
-    if (operateUser) { // 有操作者，说明是店员注册
+    if (userData.identity === 'assistant') { // 判断注册身份（店员注册）
         userData.myBoss = operateUser.userName // 添加myBoss字段
     }
     Users.findOneUser({userName: userData.userName}, function (err, data) {
@@ -353,6 +353,16 @@ router.post('/user_login' + nginxIntercept, function (req, res) {
                         httpOnly: false // 【若为true，前端document.cookie不能获取Cookies值】httpOnly 当这个选项为true时候，表明这个cookie只能有服务器修改，也就是说不能使用js修改他，这个有助于防范xss攻击
                     })
                     res.cookie('identity', jsfn.Encrypt(data.identity), { // 存储用户身份
+                        path: '/', // 存在根目录下
+                        maxAge: 1000 * 60 * 60,
+                        httpOnly: false // httpOnly 当这个选项为true时候，表明这个cookie只能有服务器修改，也就是说不能使用js修改他，这个有助于防范xss攻击
+                    })
+                    res.cookie('myBoss', jsfn.Encrypt(data.myBoss), { // 存储用户店长【assistant】
+                        path: '/', // 存在根目录下
+                        maxAge: 1000 * 60 * 60,
+                        httpOnly: false // httpOnly 当这个选项为true时候，表明这个cookie只能有服务器修改，也就是说不能使用js修改他，这个有助于防范xss攻击
+                    })
+                    res.cookie('chooseStoreOwner', jsfn.Encrypt(data.chooseStoreOwner), { // 存储用户选择店长情况【assistant】
                         path: '/', // 存在根目录下
                         maxAge: 1000 * 60 * 60,
                         httpOnly: false // httpOnly 当这个选项为true时候，表明这个cookie只能有服务器修改，也就是说不能使用js修改他，这个有助于防范xss攻击

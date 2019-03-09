@@ -5,11 +5,13 @@ var PurchasesSchema = new mongoose.Schema({
     productPurchaseSeller: {type: String, required: true}, // 商品进货厂商
     productPurchaseName: {type: String, required: true}, // 商品进货名
     productPurchaseSpecificationMsg: {type: Array, default: []}, // 商品到货规格信息
-    productPurchaseFreight: {type: Number,default: 0}, // 商品到货运费
+    belongStore: {type: String, default: ''}, // 信息所属店铺
+    productPurchaseFreight: {type: Number, default: 0}, // 商品到货运费
     productPurchaseShortage: {type: String, default: false}, // 商品是否缺少
     productPurchaseSpecificAttention: {type: String, default: false}, // 特别注意
-    productPurchaseExplain: {type: String,default: ''}, // 进货商品备注
-    exist: {type: Boolean,default: true}, // 是否存在
+    productPurchaseExplain: {type: String, default: ''}, // 进货商品备注
+    operateUser: {type: String, default: ''}, // 操作者
+    exist: {type: Boolean, default: true}, // 是否存在
     meta: {
         createAt: {type: Date, default: Date.now()},
         updateAt: {type: Date, default: Date.now()}
@@ -55,10 +57,12 @@ PurchasesSchema.statics = {
                 productPurchaseSeller: data.productPurchaseSeller, // 商品进货厂商
                 productPurchaseName: data.productPurchaseName, // 商品进货名
                 productPurchaseSpecificationMsg: data.productPurchaseSpecificationMsg, // 商品到货规格信息
+                belongStore: data.belongStore, // 信息所属店铺
                 productPurchaseFreight: data.productPurchaseFreight, // 商品到货运费
                 productPurchaseShortage: data.productPurchaseShortage, // 商品是否缺少
                 productPurchaseSpecificAttention: data.productPurchaseSpecificAttention, // 特别注意
                 productPurchaseExplain: data.productPurchaseExplain, // 进货商品备注
+                operateUser: data.operateUser, // 操作者
                 exist: data.exist //是否存在（删除时使用）
             }, callbackFn)
     },

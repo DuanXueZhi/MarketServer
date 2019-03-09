@@ -23,7 +23,7 @@ app.use(bodyParser.urlencoded({ extended: false})); // 创建 application/x-www-
 app.use(bodyParser.json({'limit': '10240kb'})); // 创建 application/json 解析 'limit': '10240kb'，设置参数大小小于20MB
 app.use('/public', express.static('public')); // 设置文件直接访问到图片，静态资源获取
 // app.use(express.static('public')); // 上等于（要去掉public访问）
-// app.use(express.static(path.join(__dirname, 'dist'))); // 前端代码存放处，可直接访问到
+// app.use(express.static(path.join(__dirname, 'dist'))); // 前端代码存放处，可直接访问到【上线打开】
 
 
 /*
